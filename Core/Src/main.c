@@ -45,8 +45,13 @@ ADC_HandleTypeDef hadc1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+GPIO_PinState Sblue[2];
+float V25 = 0.76 ;
+float Avg_Slope = 2.5/1000 ; //V
+uint16_t BottonTimeStamp = 0;
 uint16_t adcdata[2] = { 0 };
-
+uint16_t ADCMode = 0;
+float ADCOutputConverted = 0;
 typedef struct {
 	ADC_ChannelConfTypeDef Config;
 	uint16_t data;
@@ -112,8 +117,29 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-
 		ADCPollingMethodUpdate();
+		if (HAL_GetTick() - BottonTimeStamp >= 100) {
+			Sblue[0] = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+
+			if (Sblue[1] == GPIO_PIN_SET && Sblue[0] == GPIO_PIN_RESET) {
+				if (ADCMode == 1)
+				{
+					ADCMode = 0;
+				}
+				else
+				{
+					ADCMode = 1;
+				}
+			}
+			if (ADCMode == 0) {
+				ADCOutputConverted = ((ADCChannel[0].data)*3.3/4096)*1000;
+			}
+			if (ADCMode == 1) {
+				ADCOutputConverted = ((((ADCChannel[2].data)*3.3/4096)-V25)/Avg_Slope)+25;
+			}
+			Sblue[1] = Sblue[0];
+		}
+
 	}
 	/* USER CODE END 3 */
 }
@@ -254,11 +280,11 @@ static void MX_GPIO_Init(void) {
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pin : B1_Pin */
-	GPIO_InitStruct.Pin = B1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+	/*Configure GPIO pin : PC13 */
+	GPIO_InitStruct.Pin = GPIO_PIN_13;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 	/*Configure GPIO pin : LD2_Pin */
 	GPIO_InitStruct.Pin = LD2_Pin;
@@ -288,14 +314,15 @@ void ADCPollingMethodInit() {
 void ADCPollingMethodUpdate() {
 	//Read all 3 Channel
 	for (int i = 0; i < 3; i++) {
-			HAL_ADC_ConfigChannel(&hadc1, &ADCChannel[i].Config);
-			HAL_ADC_Start(&hadc1);
-			if(HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK);
-			{
-				ADCChannel[i].data = HAL_ADC_GetValue(&hadc1);
-			}
-			HAL_ADC_Stop(&hadc1);
+		HAL_ADC_ConfigChannel(&hadc1, &ADCChannel[i].Config);
+		HAL_ADC_Start(&hadc1);
+		if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
+			;
+		{
+			ADCChannel[i].data = HAL_ADC_GetValue(&hadc1);
 		}
+		HAL_ADC_Stop(&hadc1);
+	}
 }
 /* USER CODE END 4 */
 

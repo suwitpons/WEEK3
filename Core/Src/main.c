@@ -132,7 +132,7 @@ int main(void) {
 				}
 			}
 			if (ADCMode == 0) {
-				ADCOutputConverted = ((ADCChannel[0].data)*3.3/4096)*1000;
+				ADCOutputConverted = ((ADCChannel[1].data)*3.3/4096)*1000;
 			}
 			if (ADCMode == 1) {
 				ADCOutputConverted = ((((ADCChannel[2].data)*3.3/4096)-V25)/Avg_Slope)+25;
